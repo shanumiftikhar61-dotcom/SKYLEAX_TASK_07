@@ -7,10 +7,5 @@ coverage/
 *.log
 .DS_Store
 
-# Keep persistent local database files in the project data folder
-!server/data/
-!server/data/*.db
-
-# Keep local SQLite database and backups out of GitHub
-server/data/*.db
-server/data/*.db-*
+# Keep local SQLite databases and their backups out of Git.
+server/data/*.db*

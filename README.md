@@ -4,7 +4,7 @@ ShopEase is a small-business e-commerce dashboard for product management. It use
 
 ## Features
 
-- Persistent SQLite database file stored in `server/data/shop-ease.db`
+- SQLite database stored in `server/data/shop-ease.db` by default
 - Database initialization with categories and products tables
 - REST API for CRUD operations
 - Input validation on both backend and frontend
@@ -23,14 +23,14 @@ ShopEase is a small-business e-commerce dashboard for product management. It use
 
 ## Prerequisites
 
-- Node.js 18+ or 20+
+- Node.js 22.5+ (required for the built-in `node:sqlite` module)
 - npm
 
 ## Setup
 
 ```powershell
 cd "C:\Users\NJ\Documents\SKYLEAX_TASK_07"
-npm install
+npm.cmd install
 ```
 
 ## Run the app
@@ -39,7 +39,7 @@ Start both the backend and frontend together:
 
 ```powershell
 cd "C:\Users\NJ\Documents\SKYLEAX_TASK_07"
-npm run dev
+npm.cmd run dev
 ```
 
 To run the backend on a specific port, set `API_PORT`; Vite uses the same value for its `/api` proxy:
@@ -47,7 +47,7 @@ To run the backend on a specific port, set `API_PORT`; Vite uses the same value 
 ```powershell
 cd "C:\Users\NJ\Documents\SKYLEAX_TASK_07"
 $env:API_PORT = 3002
-npm run dev
+npm.cmd run dev
 ```
 
 Then open:
@@ -59,23 +59,21 @@ Then open:
 
 ```powershell
 cd "C:\Users\NJ\Documents\SKYLEAX_TASK_07"
-npm run build
+npm.cmd run build
+npm.cmd start
 ```
 
-Start only the server:
+The Express server serves the built frontend from `dist` and the API from the same origin. Set `PORT` to the port supplied by the hosting platform; locally it defaults to 3002. Open the server URL printed at startup.
 
-```powershell
-cd "C:\Users\NJ\Documents\SKYLEAX_TASK_07"
-npm start
-```
+### Render deployment
 
-To run the API on a specific port, use:
+Use these Render Web Service commands:
 
-```powershell
-cd "C:\Users\NJ\Documents\SKYLEAX_TASK_07"
-$env:API_PORT = 3002
-npm start
-```
+- Build command: `npm install && npm run build`
+- Start command: `npm start`
+- The server listens on Render's `PORT` environment variable.
+
+The database path defaults to `server/data/shop-ease.db` and can be overridden with `SHOP_EASE_DB_PATH`. Render's service filesystem is not durable by default: data stored at the default path may be lost on redeploy or instance replacement. To retain SQLite data, attach a persistent disk and set `SHOP_EASE_DB_PATH` to a database file under that disk's mount path. SQLite on a single attached disk is not suitable for multiple service instances sharing the same database; use a managed database for horizontal scaling.
 
 ## Database details
 
@@ -101,6 +99,12 @@ Tables created automatically:
   - `updated_at`
 
 ## API endpoints
+
+### GET `/api/health`
+Checks API availability and database connectivity.
+
+### GET `/api/categories`
+Returns all categories.
 
 ### GET `/api/products`
 Returns all products, optionally filtered by `search` and `category` query params.
@@ -146,33 +150,35 @@ Run the automated CRUD and validation tests:
 
 ```powershell
 cd "C:\Users\NJ\Documents\SKYLEAX_TASK_07"
-$env:NODE_ENV = "test"
-node --test server/*.test.js
+npm.cmd test
+npm.cmd run build
 ```
 
-## Persistence and restart behavior
+## Local persistence and restart behavior
 
-The database remains available after restarts because it is stored on disk in `server/data/shop-ease.db`. Existing records are preserved between app restarts.
+Locally, the database is stored at `server/data/shop-ease.db` by default, so existing records remain available across ordinary app restarts. On hosted services, persistence depends on the storage backing `SHOP_EASE_DB_PATH`; an ephemeral filesystem does not guarantee database retention.
 
 ## Deployment guidance
 
-To deploy the frontend and backend, host the backend as a Node.js app and keep the SQLite database file on a persistent volume or durable storage. For a Vercel/Netlify frontend, build the React app and serve the generated static files; keep the API on a host such as Render, Railway, or a VPS with the `server/data` directory backed by persistent storage.
+The Express server can serve the built frontend and API from one Node.js service. For a separate Vercel/Netlify frontend, configure its `/api` requests to reach a separately hosted API (same-origin relative requests will otherwise target the frontend host).
 
 Important deployment note: SQLite is local-file based, so a serverless frontend-only host cannot safely keep a true writable database unless the API is also deployed in a persistent environment. The backend must run on a Node host that can write to the database file.
 
 ## GitHub setup
 
+The existing GitHub remote is already configured. Check the worktree and remote; do not initialize another repository or add a duplicate remote:
+
 ```powershell
 cd "C:\Users\NJ\Documents\SKYLEAX_TASK_07"
-git init
-git add .
-git commit -m "Initial ShopEase release"
+git status
+git remote -v
 ```
 
-Then create a remote repository on GitHub and push with:
+After reviewing the staged changes, commit and push only when ready:
 
 ```powershell
-git branch -M main
-git remote add origin <your-github-repo-url>
-git push -u origin main
+git add .gitignore README.md server/server.js
+git diff --cached
+git commit -m "Serve ShopEase frontend from Express"
+git push origin main
 ```

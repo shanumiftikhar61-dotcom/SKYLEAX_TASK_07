@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { initializeDatabase, getDb } from './database.js';
@@ -7,7 +8,9 @@ import { initializeDatabase, getDb } from './database.js';
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const port = Number(process.env.API_PORT) || 3002;
+const port = Number(process.env.PORT || process.env.API_PORT) || 3002;
+const frontendDirectory = path.resolve(__dirname, '..', 'dist');
+const frontendIndex = path.join(frontendDirectory, 'index.html');
 
 initializeDatabase();
 
@@ -292,8 +295,22 @@ app.delete('/api/products/:id', (req, res) => {
   return res.json({ message: 'Product deleted successfully.', id: productId });
 });
 
-app.use((req, res) => {
+app.use('/api', (req, res) => {
   res.status(404).json({ error: 'Route not found.' });
+});
+
+app.use(express.static(frontendDirectory));
+
+app.get('*', (req, res, next) => {
+  if (!fs.existsSync(frontendIndex)) {
+    return res.status(404).json({ error: 'Route not found.' });
+  }
+
+  return res.sendFile(frontendIndex, (error) => {
+    if (error) {
+      next(error);
+    }
+  });
 });
 
 app.use((err, req, res, next) => {
